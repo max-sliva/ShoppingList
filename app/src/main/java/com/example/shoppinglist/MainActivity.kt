@@ -3,12 +3,12 @@ package com.example.shoppinglist
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -25,7 +25,16 @@ class MainActivity : AppCompatActivity() {
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()
         }
-
+        var itemsList = arrayListOf(ShoppingItem("",false))
+        val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
+        val shoppingListAdapter = MyAdapter(itemsList)
+//создаем компоновщик
+        val layoutManager = LinearLayoutManager(applicationContext)
+//и передаем его recyclerView
+        recyclerView.layoutManager = layoutManager
+//задаем аниматор элементов списка
+        recyclerView.itemAnimator = DefaultItemAnimator()
+        recyclerView.adapter = shoppingListAdapter //
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
