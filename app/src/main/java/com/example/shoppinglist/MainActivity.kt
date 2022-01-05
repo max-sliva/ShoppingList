@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.ui.AppBarConfiguration
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Button
+import androidx.core.view.get
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -34,7 +36,14 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = layoutManager
 //задаем аниматор элементов списка
         recyclerView.itemAnimator = DefaultItemAnimator()
-        recyclerView.adapter = shoppingListAdapter //
+        recyclerView.adapter = shoppingListAdapter
+        val addItemButton: Button = findViewById(R.id.button2)
+        addItemButton.setOnClickListener{
+            itemsList.add(ShoppingItem("", false))
+            recyclerView.smoothScrollToPosition(recyclerView.bottom)
+            shoppingListAdapter.notifyDataSetChanged()
+//            shoppingListAdapter.getItemViewType(itemsList.size-1).req
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
