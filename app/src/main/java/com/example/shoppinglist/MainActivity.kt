@@ -1,22 +1,41 @@
 package com.example.shoppinglist
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.ui.AppBarConfiguration
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
-import androidx.core.view.get
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.ui.AppBarConfiguration
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.databinding.ActivityMainBinding
+import com.google.android.material.snackbar.Snackbar
+import com.mongodb.ConnectionString
+import com.mongodb.MongoClientSettings
+//import com.mongodb.client.MongoClient
+//import com.mongodb.client.MongoClients
+//import com.mongodb.client.MongoDatabase
+import org.bson.Document
+import io.realm.Realm
+import io.realm.mongodb.App
+import io.realm.mongodb.AppConfiguration
+// Realm Authentication Packages
+import io.realm.mongodb.User
+import io.realm.mongodb.Credentials
+// MongoDB Service Packages
+import io.realm.mongodb.mongo.MongoClient
+import io.realm.mongodb.mongo.MongoDatabase
+import io.realm.mongodb.mongo.MongoCollection
+import org.bson.codecs.configuration.CodecRegistries
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+//https://drive.google.com/file/d/1N_mxkVWme692WFbkuQlgnsel3qXpbtrm/view?usp=sharing listContent.txt
+    var user: User? = null
+    var app: App? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +63,25 @@ class MainActivity : AppCompatActivity() {
             shoppingListAdapter.notifyDataSetChanged()
 //            shoppingListAdapter.getItemViewType(itemsList.size-1).req
         }
+        Realm.init(applicationContext)
+        val appID = "shoppinglist-xkokw" // replace this with your App ID
+        app = App(
+            AppConfiguration.Builder(appID)
+                .build()
+        )
+        val emailPasswordCredentials: Credentials = Credentials.emailPassword(
+            "persimon@inbox.ru",
+            "111111"
+        )
+
+        app?.loginAsync(emailPasswordCredentials) {
+            if (it.isSuccess) {
+                println("Successfully authenticated using an email and password.")
+                user = app?.currentUser()
+            } else {
+                println(it.error.toString())
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -57,8 +95,50 @@ class MainActivity : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_shareList -> toMongoAtlas()
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun toMongoAtlas(): Boolean {
+        println("Share to drive")
+//        val connectionString =
+//            ConnectionString("mongodb://persimon@inbox.ru:111111@realm.mongodb.com:27020/?authMechanism=PLAIN&authSource=%24external&ssl=true&appName=shoppinglist-xkokw:listDB-service:local-userpass")
+//        val settings: MongoClientSettings = MongoClientSettings.builder()
+//            .applyConnectionString(connectionString)
+//            .build()
+//        val mongoClient: MongoClient = MongoClients.create(settings)
+//        val mongoDatabase: MongoDatabase = mongoClient.getDatabase("listDB")
+//        var collection = mongoDatabase.getCollection("items") //выбираем коллекцию
+//        val itemsCount = collection.countDocuments()
+        println("app = ${app.toString()}")
+        val user = app?.currentUser()
+        val mongoClient =
+            user!!.getMongoClient("listDB-service")
+        val mongoDatabase =
+            mongoClient.getDatabase("listDB")
+        println("listDB = $mongoDatabase")
+        val mongoCollection = mongoDatabase.getCollection("items")
+        mongoCollection.count().getAsync { task ->
+            if (task.isSuccess) {
+                val count = task.get()
+                println("successfully counted, number of documents in the collection: $count")
+            } else {
+                println("failed to count documents with: ${task.error}")
+            }
+        }
+        val iter = mongoCollection.find().iterator()
+        iter.getAsync { task ->
+            if (task.isSuccess) {
+                val results = task.get()
+                println("successfully found all items:")
+                while (results.hasNext()) {
+                    println(results.next().toString())
+                }
+            } else {
+                println("failed to find documents with: ${task.error}")
+            }
+        }
+        return true
     }
 }
