@@ -7,12 +7,16 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import androidx.recyclerview.widget.RecyclerView
-class MyAdapter (private var itemList: ArrayList<ShoppingItem>):
+import io.realm.mongodb.App
+import org.bson.Document
+import org.bson.types.ObjectId
+
+class MyAdapter(private var itemList: ArrayList<ShoppingItem>, private var app: App):
     RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
     class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         var itemName: EditText = view.findViewById(R.id.itemText)
         var itemSelected: CheckBox = view.findViewById(R.id.itemCheckBox)
-        val button: Button = view.findViewById(R.id.itemButton)
+        val button: Button = view.findViewById(R.id.itemButton)  //кнопка удаления
 
 //        init{
 //            button.setOnClickListener {
@@ -36,6 +40,22 @@ class MyAdapter (private var itemList: ArrayList<ShoppingItem>):
             println("text = ${holder.itemName.text}")
             if (position>=0 && position<itemList.size) {
                 itemList[position].text = holder.itemName.text.toString()
+
+                var newItem = Document("_id", ObjectId()) //создаем документ для БД
+                newItem.append("itemName",holder.itemName.text.toString()) //вставляем в него поля с нужными данными из объекта user
+                //todo сделать отдельную функцию на update
+                val user = app?.currentUser()
+                val mongoClient = user!!.getMongoClient("listDB-service")
+                val mongoDatabase = mongoClient.getDatabase("listDB")
+                println("listDB = $mongoDatabase")
+                val mongoCollection = mongoDatabase.getCollection("items")
+                mongoCollection.insertOne(newItem)?.getAsync { task -> //заменить на update https://docs.mongodb.com/realm/sdk/android/examples/mongodb-remote-access/#update-a-single-document
+                    if (task.isSuccess) {
+                        println("successfully inserted a document with id: ${task.get().insertedId}")
+                    } else {
+                        println("failed to insert documents with: ${task.error}")
+                    }
+                }
 //                notifyItemChanged(position)
             }
 //            false
@@ -43,6 +63,7 @@ class MyAdapter (private var itemList: ArrayList<ShoppingItem>):
         holder.itemSelected.isChecked = item.checked
         holder.button.setOnClickListener {
             itemList.remove(item)
+            //todo сделать отдельную функцию для удаления элемента из БД
             notifyItemRemoved(position);
 //            notifyItemRangeChanged(position, itemList.size)
             //notifyDataSetChanged()

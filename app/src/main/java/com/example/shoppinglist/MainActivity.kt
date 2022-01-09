@@ -11,23 +11,20 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.databinding.ActivityMainBinding
 import com.google.android.material.snackbar.Snackbar
-import com.mongodb.ConnectionString
-import com.mongodb.MongoClientSettings
 //import com.mongodb.client.MongoClient
 //import com.mongodb.client.MongoClients
 //import com.mongodb.client.MongoDatabase
-import org.bson.Document
 import io.realm.Realm
 import io.realm.mongodb.App
 import io.realm.mongodb.AppConfiguration
 // Realm Authentication Packages
 import io.realm.mongodb.User
 import io.realm.mongodb.Credentials
+import io.realm.RealmConfiguration
+
+
+
 // MongoDB Service Packages
-import io.realm.mongodb.mongo.MongoClient
-import io.realm.mongodb.mongo.MongoDatabase
-import io.realm.mongodb.mongo.MongoCollection
-import org.bson.codecs.configuration.CodecRegistries
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,22 +45,13 @@ class MainActivity : AppCompatActivity() {
         }
         var itemsList = arrayListOf(ShoppingItem("",false))
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
-        val shoppingListAdapter = MyAdapter(itemsList)
-//создаем компоновщик
-        val layoutManager = LinearLayoutManager(applicationContext)
-//и передаем его recyclerView
-        recyclerView.layoutManager = layoutManager
-//задаем аниматор элементов списка
-        recyclerView.itemAnimator = DefaultItemAnimator()
-        recyclerView.adapter = shoppingListAdapter
-        val addItemButton: Button = findViewById(R.id.button2)
-        addItemButton.setOnClickListener{
-            itemsList.add(ShoppingItem("", false))
-            recyclerView.smoothScrollToPosition(recyclerView.bottom)
-            shoppingListAdapter.notifyDataSetChanged()
-//            shoppingListAdapter.getItemViewType(itemsList.size-1).req
-        }
+
         Realm.init(applicationContext)
+        val config = RealmConfiguration.Builder() // below line is to allow write
+            // data to database on ui thread.
+            .allowWritesOnUiThread(true)
+            .build()
+        Realm.setDefaultConfiguration(config)
         val appID = "shoppinglist-xkokw" // replace this with your App ID
         app = App(
             AppConfiguration.Builder(appID)
@@ -81,6 +69,23 @@ class MainActivity : AppCompatActivity() {
             } else {
                 println(it.error.toString())
             }
+        }
+
+        val shoppingListAdapter = MyAdapter(itemsList, app!!)
+//создаем компоновщик
+        val layoutManager = LinearLayoutManager(applicationContext)
+//и передаем его recyclerView
+        recyclerView.layoutManager = layoutManager
+//задаем аниматор элементов списка
+        recyclerView.itemAnimator = DefaultItemAnimator()
+        recyclerView.adapter = shoppingListAdapter
+        val addItemButton: Button = findViewById(R.id.button2)
+        addItemButton.setOnClickListener{
+            itemsList.add(ShoppingItem("", false))
+            recyclerView.smoothScrollToPosition(recyclerView.bottom)
+            shoppingListAdapter.notifyDataSetChanged()
+            //todo сделать отдельную функцию для добавления элемента
+//            shoppingListAdapter.getItemViewType(itemsList.size-1).req
         }
     }
 
